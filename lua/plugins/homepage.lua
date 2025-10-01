@@ -9,7 +9,7 @@ return {
 |   |_||_ |  | |  || |_____ |       ||   | | | |   |
 |    __  ||  |_|  ||_____  ||_     _||   | | |_|   |
 |   |  | ||       | _____| |  |   |  |   | |       |
-|___|  |_||_______||_______|  |___|  |___| |______|  ... ganteng
+|___|  |_||_______||_______|  |___|  |___| |______|
 ]]
 
     logo = string.rep("\n", 8) .. logo .. "\n\n"
@@ -30,16 +30,18 @@ return {
             break
           end
           -- show folder name, but cd into full path
-          local project_path = line
-          table.insert(projects, {
-            action = function()
-              vim.cmd.cd(project_path)
-              Snacks.picker.explorer()
-              vim.api.nvim_buf_delete(0, { force = true })
-            end,
-            desc = vim.fn.fnamemodify(line, ":t"),
-            icon = " ",
-          })
+          local project_path = vim.trim(line)
+          if project_path ~= "" and vim.fn.isdirectory(project_path) == 1 then
+            table.insert(projects, {
+              action = function()
+                vim.cmd.cd(project_path)
+                vim.api.nvim_buf_delete(0, { force = true })
+                Snacks.picker.explorer()
+              end,
+              desc = vim.fn.fnamemodify(line, ":t"),
+              icon = " ",
+            })
+          end
         end
       end
       return projects
@@ -121,9 +123,6 @@ return {
         --     local ms = (math.floor(stats.startuptime * 100 + 0.5) / 100)
         --     return { "⚡ Neovim loaded " .. stats.loaded .. "/" .. stats.count .. " plugins in " .. ms .. "ms" }
         --   end,
-        projects_label = function()
-          return { "Recent Projects" }
-        end,
       },
     }
 
@@ -135,10 +134,13 @@ return {
 
     -- add recent projects dynamically (limit to 5)
     local projects = get_projects(5)
-    for _, proj in ipairs(projects) do
-      proj.desc = " " .. proj.desc .. string.rep(" ", 43 - #proj.desc)
-      proj.key_format = "    " -- no hotkey, just listed
-      table.insert(opts.config.center, proj)
+    if #projects > 0 then
+      for i, proj in ipairs(projects) do
+        proj.desc = " " .. proj.desc .. string.rep(" ", 43 - #proj.desc)
+        proj.key = tostring(i)
+        proj.key_format = "  %s"
+        table.insert(opts.config.center, proj)
+      end
     end
 
     -- reopen dashboard after closing Lazy
